@@ -1,7 +1,9 @@
 from PySide6.QtCore import QSortFilterProxyModel
 
+
 class SortFilterProxyModel(QSortFilterProxyModel):
     """A custom QSortFilterProxyModel to allow multiple column filtering"""
+
     def __init__(self, *args, **kwargs):
         QSortFilterProxyModel.__init__(self, *args, **kwargs)
         self.filters = {}

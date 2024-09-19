@@ -1,10 +1,14 @@
-import sqlite3 as db
 import math
+import sqlite3 as db
+
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QWidget,QHBoxLayout, QVBoxLayout,QGridLayout, QPushButton, QLineEdit, QLabel, QMessageBox
+from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit,
+                               QMessageBox, QPushButton, QVBoxLayout, QWidget)
+
 
 class DataEditWindow(QWidget):
     """Window for editing or inserting data."""
+
     closed = Signal()
 
     def __init__(self, table_name, column_headers, data, window_type, conn, cursor):
@@ -18,16 +22,18 @@ class DataEditWindow(QWidget):
         self.column_headers = column_headers
         self.data = data
         self.line_edit_list = []
-        self.primary_key_column = self.cursor.execute("SELECT * FROM pragma_table_info(?) WHERE pk = 1", (self.table_name,)).fetchone()
-        if self.primary_key_column == None: self.primary_key_column = 0 
-        else: self.primary_key_column = self.primary_key_column[0]
+        self.primary_key_column = self.cursor.execute(
+            "SELECT * FROM pragma_table_info(?) WHERE pk = 1", (self.table_name,)
+        ).fetchone()
+        if self.primary_key_column == None:
+            self.primary_key_column = 0
+        else:
+            self.primary_key_column = self.primary_key_column[0]
 
         self.create_gui_layout()
         self.create_form()
         self.create_buttons(window_type)
         self.load_data(data)
-        print(len(self.line_edit_list))
-
 
     def create_gui_layout(self):
         """Create the GUI layout."""
@@ -42,7 +48,6 @@ class DataEditWindow(QWidget):
         self.messageLabel = QLabel()
         self.label_Layout.addWidget(self.messageLabel)
 
-
     def create_form(self):
         """Create the form for editing or inserting data."""
         max_rows = math.ceil(len(self.column_headers) / 2)
@@ -54,7 +59,8 @@ class DataEditWindow(QWidget):
                 line_edit = QLineEdit()
                 self.line_edit_list.append(line_edit)
                 label = QLabel(self.column_headers[column_header_index])
-                line_edit.setPlaceholderText(self.column_headers[column_header_index])
+                line_edit.setPlaceholderText(
+                    self.column_headers[column_header_index])
                 self.grid_layout.addWidget(line_edit, row, column)
                 self.grid_layout.addWidget(label, row, column - 1)
 
@@ -91,41 +97,68 @@ class DataEditWindow(QWidget):
         data = [line_edit.text() for line_edit in self.line_edit_list]
         print(data)
         if data[self.primary_key_column] != "":
-            column_headers_string = ",".join(["[{}]".format(header) for header in self.column_headers])
-            column_questionmark_string = ",".join("?" for _ in range(len(self.column_headers)))
+            column_headers_string = ",".join(
+                ["[{}]".format(header) for header in self.column_headers]
+            )
+            column_questionmark_string = ",".join(
+                "?" for _ in range(len(self.column_headers))
+            )
             try:
-                self.cursor.execute("insert into {}({}) VALUES ({});".format(self.table_name, column_headers_string, column_questionmark_string),(data))
+                self.cursor.execute(
+                    "insert into {}({}) VALUES ({});".format(
+                        self.table_name,
+                        column_headers_string,
+                        column_questionmark_string,
+                    ),
+                    (data),
+                )
                 self.conn.commit()
             except db.Error as error:
-                print('Error occurred - ', error)
+                print("Error occurred - ", error)
             self.close_window()
         else:
-            self.messageLabel.setText(self.column_headers[self.primary_key_column] + " has no data")
+            self.messageLabel.setText(
+                self.column_headers[self.primary_key_column] + " has no data"
+            )
 
     def delete_data(self):
         """Delete data from the database."""
         reply = self.create_message_box().exec()
         if reply == QMessageBox.Yes:
             try:
-                self.cursor.execute('DELETE FROM {} WHERE {} = ?'.format(self.table_name,self.column_headers[0]), (self.data[0],))  
+                self.cursor.execute(
+                    "DELETE FROM {} WHERE {} = ?".format(
+                        self.table_name, self.column_headers[0]
+                    ),
+                    (self.data[0],),
+                )
                 self.conn.commit()
             except db.Error as error:
-                print('Error occurred - ', error)
+                print("Error occurred - ", error)
             self.close_window()
 
     def update_data(self):
         """Update data in the database."""
         data = [line_edit.text() for line_edit in self.line_edit_list]
         if data[self.primary_key_column] != "":
-            column_headers_string = ", ".join("[{}] = ?".format(header) for header in self.column_headers)
+            column_headers_string = ", ".join(
+                "[{}] = ?".format(header) for header in self.column_headers
+            )
             try:
-                self.cursor.execute('UPDATE {} SET {} WHERE {} = ?'.format(self.table_name,column_headers_string, self.column_headers[0]), (data + [self.data[0]]))
+                self.cursor.execute(
+                    "UPDATE {} SET {} WHERE {} = ?".format(
+                        self.table_name, column_headers_string, self.column_headers[0]
+                    ),
+                    (data + [self.data[0]]),
+                )
                 self.conn.commit()
             except db.Error as error:
-                print('Error occurred - ', error)
+                print("Error occurred - ", error)
             self.close_window()
         else:
-            self.messageLabel.setText(self.column_headers[self.primary_key_column] + " has no data")
+            self.messageLabel.setText(
+                self.column_headers[self.primary_key_column] + " has no data"
+            )
 
     def create_message_box(self):
         """Create a message box for confirmation."""
@@ -145,4 +178,3 @@ class DataEditWindow(QWidget):
         """Overwrite the close event."""
         self.closed.emit()
         event.accept()
-        
